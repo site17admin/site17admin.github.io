@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>THE GAME</title>
+<title>2AM BEFORE EXAMS</title>
 
 <style>
 html, body {
@@ -129,7 +129,7 @@ body {
 <!-- START SCREEN -->
 <div id="startScreen">
   <img id="titleImg" src="FCK-removebg-preview.png">
-  <img id="gameBtn" src="the-game.PNG">
+  <img id="gameBtn" src="the-game.png">
 </div>
 
 <!-- UI -->
@@ -155,7 +155,7 @@ const DB_PER_CAT = 6;
 const cats = [];
 const field = document.getElementById("field");
 
-function imgPath(type,n){ return encodeURIComponent(`${type} ${n}.webp`); }
+function imgPath(type,n){ return encodeURIComponent(`${type} ${n}.png`); }
 
 /* ---------- CREATE CATS ---------- */
 for (const n of CAT_NUMBERS){
