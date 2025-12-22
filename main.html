@@ -1,322 +1,280 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Sprinkle Scream Cats</title>
-  <style>
-    :root{
-      --thresholdDb: 10; /* CHANGED from 20 -> 10 */
-      --maxDb: 55;       /* how fast it ramps to "all cats screaming" */
-    }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 
-    html, body { height: 100%; }
+<title>THE GAME</title>
 
-    body{
-      margin:0;
-      overflow:hidden;
-      font-family: system-ui, -apple-system, Segoe UI, Arial, sans-serif;
+<style>
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Times New Roman", Times, serif;
+}
 
-      /* Rainbow background */
-      background: linear-gradient(90deg,
-        #ff4d4d, #ff9a4d, #ffe74d, #7dff4d, #4dffd8, #4d7dff, #b14dff, #ff4dd8
-      );
-    }
+body {
+  background: linear-gradient(
+    90deg,
+    #ff0033,
+    #ff7a00,
+    #ffee00,
+    #33ff00,
+    #00ffd5,
+    #0066ff,
+    #7a00ff,
+    #ff00aa
+  );
+}
 
-    /* Top controls */
-    .topbar{
-      position: fixed;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      z-index: 10;
+/* ---------- START SCREEN ---------- */
+#startScreen {
+  position: fixed;
+  inset: 0;
+  background: black;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 20;
+}
 
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      justify-content:space-between;
-      flex-wrap:wrap;
+#titleImg {
+  width: 70%;
+  max-width: 900px;
+  margin-top: 12vh;
+  animation: float 2.5s ease-in-out infinite;
+}
 
-      padding: 10px 12px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.85);
-      backdrop-filter: blur(6px);
-      box-shadow: 0 10px 28px rgba(0,0,0,0.18);
-    }
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+  100% { transform: translateY(0); }
+}
 
-    .controls{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-    }
+#gameBtn {
+  margin-top: 40px;
+  cursor: pointer;
+}
 
-    button{
-      border: none;
-      border-radius: 12px;
-      padding: 10px 14px;
-      font-weight: 800;
-      cursor:pointer;
-      box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    }
-    #startBtn{ background: #ffffff; }
-    #stopBtn{ background: #111; color:#fff; }
+.fadeOut {
+  animation: fade 0.35s forwards;
+}
 
-    .readout{
-      display:flex;
-      gap:10px;
-      align-items:center;
-      flex-wrap:wrap;
-      font-weight:800;
-    }
-    .pill{
-      background: rgba(255,255,255,0.75);
-      padding: 6px 10px;
-      border-radius: 999px;
-    }
+@keyframes fade {
+  to { opacity: 0; }
+}
 
-    /* Sprinkle field (NO translucent white panel) */
-    #field{
-      position: relative;
-      width: 100%;
-      height: 100%;
-    }
+/* ---------- GAME UI ---------- */
+#ui {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  font-size: 18px;
+  font-weight: bold;
+  color: black;
+}
 
-    .cat{
-      position:absolute;
-      user-select:none;
-      pointer-events:none;
-      filter: drop-shadow(0 10px 16px rgba(0,0,0,0.20));
-      will-change: transform, top, left;
-    }
-    .cat img{
-      display:block;
-      width: 140px;  /* change for bigger/smaller cats */
-      height: auto;
-    }
-  </style>
+#ui button {
+  font-family: inherit;
+  font-weight: bold;
+  margin-right: 8px;
+  cursor: pointer;
+}
+
+/* ---------- FIELD ---------- */
+#field {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------- CATS ---------- */
+.cat {
+  position: absolute;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 12px 18px rgba(0,0,0,0.35));
+}
+
+.cat img {
+  width: 220px;
+}
+
+.vibrate {
+  animation: vibrate 0.06s infinite;
+}
+
+@keyframes vibrate {
+  0%   { transform: translate(0,0); }
+  25%  { transform: translate(2px,-2px); }
+  50%  { transform: translate(-2px,2px); }
+  75%  { transform: translate(2px,2px); }
+  100% { transform: translate(0,0); }
+}
+
+/* ---------- EXPLOSIONS ---------- */
+.explosion {
+  position: absolute;
+  pointer-events: none;
+  z-index: 15;
+}
+</style>
 </head>
 
 <body>
-  <div class="topbar">
-    <div class="controls">
-      <button id="startBtn">Start mic</button>
-      <button id="stopBtn" disabled>Stop</button>
-    </div>
 
-    <div class="readout">
-      <span class="pill">dB: <b id="db">--</b></span>
-      <span class="pill">Screaming: <b id="count">0</b>/<b id="total">0</b></span>
-      <span class="pill" id="status">Mic: off</span>
-    </div>
-  </div>
+<!-- START SCREEN -->
+<div id="startScreen">
+  <img id="titleImg" src="FCK-removebg-preview.png">
+  <img id="gameBtn" src="THE GAME.PNG">
+</div>
 
-  <div id="field"></div>
+<!-- UI -->
+<div id="ui" style="display:none">
+  dB: <span id="db">--</span>
+  Screaming: <span id="count">0</span>/<span id="total">0</span>
+</div>
 
-  <script>
-    // --- Your files (from the ZIP) are in the SAME folder as index.html ---
-    // Files: "normal 1.png"..."normal 4.png" and "scream 1.png"..."scream 4.png"
-    const CAT_NUMBERS = [1,2,3,4];
-    const DUPLICATES_PER_CAT = 2; // each cat twice -> 8 cats total
+<!-- FIELD -->
+<div id="field"></div>
 
-    // Audio "dB" here is relative to a reference level (not a certified SPL meter).
-    const REF_RMS = 0.01;
+<script>
+/* ---------- SETUP ---------- */
+const CAT_NUMBERS = [1,2,3,4];
+const DUPLICATES = 2;
 
-    const THRESHOLD_DB = 10; // CHANGED as requested
-    const MAX_DB = 55;
+const REF_RMS = 0.005;
+const BASE_DB = 10;
+const DB_PER_CAT = 6;
 
-    const field = document.getElementById("field");
-    const dbEl = document.getElementById("db");
-    const countEl = document.getElementById("count");
-    const totalEl = document.getElementById("total");
-    const statusEl = document.getElementById("status");
+const cats = [];
+const field = document.getElementById("field");
 
-    const startBtn = document.getElementById("startBtn");
-    const stopBtn = document.getElementById("stopBtn");
+function imgPath(type,n){ return encodeURIComponent(`${type} ${n}.webp`); }
 
-    // Build slots: [1,1,2,2,3,3,4,4] but each is its own "sprinkle"
-    const slots = [];
-    for (const n of CAT_NUMBERS){
-      for (let k = 0; k < DUPLICATES_PER_CAT; k++){
-        slots.push({ n, k });
-      }
+/* ---------- CREATE CATS ---------- */
+for (const n of CAT_NUMBERS){
+  for (let i=0;i<DUPLICATES;i++){
+    const d = document.createElement("div");
+    d.className = "cat";
+    const img = document.createElement("img");
+    img.src = imgPath("normal",n);
+    d.appendChild(img);
+    field.appendChild(d);
+    cats.push({d,img,n});
+  }
+}
+document.getElementById("total").textContent = cats.length;
+
+/* ---------- SPRINKLE LAYOUT ---------- */
+function sprinkle(){
+  const W = innerWidth, H = innerHeight;
+  const cols = Math.ceil(Math.sqrt(cats.length * W / H));
+  const rows = Math.ceil(cats.length / cols);
+  const cw = W / cols, ch = H / rows;
+
+  let i=0;
+  for (let r=0;r<rows;r++){
+    for (let c=0;c<cols;c++){
+      if (i>=cats.length) return;
+      const jx = (Math.random()-0.5)*cw*0.5;
+      const jy = (Math.random()-0.5)*ch*0.5;
+      cats[i].d.style.left = c*cw + cw/2 + jx - 110 + "px";
+      cats[i].d.style.top  = r*ch + ch/2 + jy - 110 + "px";
+      cats[i].d.style.transform = `rotate(${Math.random()*30-15}deg)`;
+      i++;
     }
-    totalEl.textContent = slots.length;
+  }
+}
+sprinkle();
+addEventListener("resize", sprinkle);
 
-    function filePath(kind, n){
-      // kind: "normal" or "scream"
-      // Encode spaces -> %20 so the browser loads correctly.
-      return encodeURIComponent(`${kind} ${n}.png`);
-    }
+/* ---------- AUDIO ---------- */
+let audioCtx, analyser, stream, raf;
+const dbEl = document.getElementById("db");
+const countEl = document.getElementById("count");
 
-    // Create cat elements
-    const cats = [];
-    for (const s of slots){
-      const wrap = document.createElement("div");
-      wrap.className = "cat";
+function rmsToDb(r){ return 20*Math.log10(Math.max(r,1e-8)/REF_RMS); }
 
-      // Slight random rotation/scale for “sprinkles”
-      const rot = (Math.random()*24 - 12).toFixed(2); // -12..12 deg
-      const scale = (0.85 + Math.random()*0.5).toFixed(2); // 0.85..1.35
-      wrap.style.transform = `rotate(${rot}deg) scale(${scale})`;
+let maxMode = false;
+let exitTimer = null;
 
-      const img = document.createElement("img");
-      img.alt = `cat ${s.n}`;
-      img.src = filePath("normal", s.n);
+function spawnExplosion(){
+  const img = document.createElement("img");
+  img.className = "explosion";
+  img.src = Math.random()<0.5 ? "explosions.gif" : "explosions2.gif";
+  img.style.left = Math.random()*(innerWidth-200)+"px";
+  img.style.top  = Math.random()*(innerHeight-200)+"px";
+  img.style.width = 120 + Math.random()*200 + "px";
+  field.appendChild(img);
+  setTimeout(()=>img.remove(),1000);
+}
 
-      // Helpful debugging: if a file name/path is wrong, this will tell you in console
-      img.onerror = () => {
-        console.warn("Image failed to load:", img.src,
-          "Make sure PNGs are in the same folder as index.html and names match exactly.");
-      };
+function enterMax(){
+  if (maxMode) return;
+  maxMode = true;
+  body.style.background = `url("hell.png") center/cover fixed`;
+  for (let i=0;i<12;i++) spawnExplosion();
+}
 
-      wrap.appendChild(img);
-      field.appendChild(wrap);
+function exitMax(){
+  maxMode = false;
+  body.style.background = "";
+}
 
-      cats.push({ wrap, img, n: s.n });
-    }
+function loop(){
+  const buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  let sum=0; for (const x of buf) sum+=x*x;
+  const rms = Math.sqrt(sum/buf.length);
+  const db = rmsToDb(rms);
+  dbEl.textContent = db.toFixed(1);
 
-    function sprinkleLayout(){
-      const W = window.innerWidth;
-      const H = window.innerHeight;
+  let screaming = 0;
+  if (db >= BASE_DB)
+    screaming = Math.min(cats.length,1+Math.floor((db-BASE_DB)/DB_PER_CAT));
 
-      // Leave space for the topbar so cats don’t hide behind it
-      const topPadding = 90;
+  countEl.textContent = screaming;
 
-      // “Good enough” non-overlap: random positions with a minimum distance
-      const minDist = 120; // increase = more spaced out
-      const placed = [];
+  cats.forEach((c,i)=>{
+    const s = i < screaming;
+    c.img.src = imgPath(s?"scream":"normal",c.n);
+    c.d.classList.toggle("vibrate",s);
+  });
 
-      for (const c of cats){
-        let x, y;
-        let tries = 0;
-        while (true){
-          tries++;
-          x = Math.random() * (W - 180) + 20;
-          y = Math.random() * (H - topPadding - 180) + topPadding + 20;
+  if (screaming === cats.length){
+    enterMax();
+    if (Math.random() < Math.min(0.25, db/60)) spawnExplosion();
+    if (exitTimer){ clearTimeout(exitTimer); exitTimer=null; }
+  } else if (maxMode && !exitTimer){
+    exitTimer = setTimeout(()=>{ exitMax(); exitTimer=null; },3000);
+  }
 
-          let ok = true;
-          for (const p of placed){
-            const dx = x - p.x;
-            const dy = y - p.y;
-            if ((dx*dx + dy*dy) < (minDist*minDist)){
-              ok = false;
-              break;
-            }
-          }
-          if (ok || tries > 80) break; // don’t get stuck forever
-        }
+  raf = requestAnimationFrame(loop);
+}
 
-        c.wrap.style.left = `${x}px`;
-        c.wrap.style.top  = `${y}px`;
-        placed.push({x,y});
-      }
-    }
+async function startMic(){
+  stream = await navigator.mediaDevices.getUserMedia({audio:true});
+  audioCtx = new AudioContext();
+  analyser = audioCtx.createAnalyser();
+  analyser.fftSize = 2048;
+  audioCtx.createMediaStreamSource(stream).connect(analyser);
+  loop();
+}
 
-    sprinkleLayout();
-    window.addEventListener("resize", sprinkleLayout);
-
-    function rmsToDb(rms){
-      const safe = Math.max(rms, 1e-8);
-      return 20 * Math.log10(safe / REF_RMS);
-    }
-
-    function setScreamingCount(num){
-      for (let i = 0; i < cats.length; i++){
-        const kind = (i < num) ? "scream" : "normal";
-        cats[i].img.src = filePath(kind, cats[i].n);
-      }
-      countEl.textContent = num;
-    }
-
-    // Start with all calm
-    setScreamingCount(0);
-
-    // --- Mic ---
-    let audioCtx, analyser, stream, rafId;
-
-    function rmsFromFloatTimeDomain(data){
-      let sum = 0;
-      for (let i = 0; i < data.length; i++){
-        const x = data[i];
-        sum += x*x;
-      }
-      return Math.sqrt(sum / data.length);
-    }
-
-    function loop(){
-      if (!analyser || !audioCtx) return;
-
-      const buffer = new Float32Array(analyser.fftSize);
-      analyser.getFloatTimeDomainData(buffer);
-
-      // Smooth a bit by mixing current with last
-      const rms = rmsFromFloatTimeDomain(buffer);
-      const db = rmsToDb(rms);
-
-      dbEl.textContent = db.toFixed(1);
-
-      let screaming = 0;
-      if (db > THRESHOLD_DB){
-        const t = Math.min(1, Math.max(0, (db - THRESHOLD_DB) / (MAX_DB - THRESHOLD_DB)));
-        screaming = Math.max(1, Math.floor(t * cats.length));
-      }
-      setScreamingCount(screaming);
-
-      rafId = requestAnimationFrame(loop);
-    }
-
-    async function startMic(){
-      try{
-        stream = await navigator.mediaDevices.getUserMedia({
-          audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
-        });
-
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const source = audioCtx.createMediaStreamSource(stream);
-
-        analyser = audioCtx.createAnalyser();
-        analyser.fftSize = 2048;
-        analyser.smoothingTimeConstant = 0.6;
-
-        source.connect(analyser);
-
-        startBtn.disabled = true;
-        stopBtn.disabled = false;
-        statusEl.textContent = "Mic: on";
-
-        loop();
-      } catch(e){
-        statusEl.textContent = "Mic: blocked";
-        alert("Mic permission denied or unavailable.");
-        console.error(e);
-      }
-    }
-
-    function stopMic(){
-      if (rafId) cancelAnimationFrame(rafId);
-      rafId = null;
-
-      if (stream){
-        stream.getTracks().forEach(t => t.stop());
-        stream = null;
-      }
-      if (audioCtx){
-        audioCtx.close();
-        audioCtx = null;
-      }
-      analyser = null;
-
-      startBtn.disabled = false;
-      stopBtn.disabled = true;
-
-      dbEl.textContent = "--";
-      statusEl.textContent = "Mic: off";
-      setScreamingCount(0);
-    }
-
-    startBtn.addEventListener("click", startMic);
-    stopBtn.addEventListener("click", stopMic);
-  </script>
+/* ---------- START BUTTON ---------- */
+document.getElementById("gameBtn").onclick = ()=>{
+  document.getElementById("titleImg").classList.add("fadeOut");
+  document.getElementById("startScreen").classList.add("fadeOut");
+  setTimeout(()=>{
+    startScreen.remove();
+    document.getElementById("ui").style.display="block";
+    startMic();
+  },350);
+};
+</script>
 </body>
 </html>
