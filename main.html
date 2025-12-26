@@ -3,8 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-
-<title>2AM BEFORE EXAMS</title>
+<title>THE GAME</title>
 
 <style>
 html, body {
@@ -18,14 +17,8 @@ html, body {
 body {
   background: linear-gradient(
     90deg,
-    #ff0033,
-    #ff7a00,
-    #ffee00,
-    #33ff00,
-    #00ffd5,
-    #0066ff,
-    #7a00ff,
-    #ff00aa
+    #ff0033,#ff7a00,#ffee00,#33ff00,
+    #00ffd5,#0066ff,#7a00ff,#ff00aa
   );
 }
 
@@ -62,11 +55,9 @@ body {
   animation: fade 0.35s forwards;
 }
 
-@keyframes fade {
-  to { opacity: 0; }
-}
+@keyframes fade { to { opacity: 0; } }
 
-/* ---------- GAME UI ---------- */
+/* ---------- UI ---------- */
 #ui {
   position: fixed;
   top: 10px;
@@ -77,11 +68,27 @@ body {
   color: black;
 }
 
-#ui button {
-  font-family: inherit;
+/* ---------- SCORE ---------- */
+#score {
+  position: fixed;
+  bottom: 10px;
+  left: 10px;
+  z-index: 10;
+  font-size: 28px;
   font-weight: bold;
-  margin-right: 8px;
-  cursor: pointer;
+  color: white;
+}
+
+.scoreJitter {
+  animation: scoreJitter 0.25s;
+}
+
+@keyframes scoreJitter {
+  0% { transform: translate(0,0); }
+  25% { transform: translate(2px,-2px); }
+  50% { transform: translate(-2px,2px); }
+  75% { transform: translate(2px,2px); }
+  100% { transform: translate(0,0); }
 }
 
 /* ---------- FIELD ---------- */
@@ -108,10 +115,10 @@ body {
 }
 
 @keyframes vibrate {
-  0%   { transform: translate(0,0); }
-  25%  { transform: translate(2px,-2px); }
-  50%  { transform: translate(-2px,2px); }
-  75%  { transform: translate(2px,2px); }
+  0% { transform: translate(0,0); }
+  25% { transform: translate(2px,-2px); }
+  50% { transform: translate(-2px,2px); }
+  75% { transform: translate(2px,2px); }
   100% { transform: translate(0,0); }
 }
 
@@ -126,50 +133,64 @@ body {
 
 <body>
 
-<!-- START SCREEN -->
 <div id="startScreen">
   <img id="titleImg" src="FCK-removebg-preview.png">
-  <img id="gameBtn" src="the-game.png">
+  <img id="gameBtn" src="THE GAME.PNG">
 </div>
 
-<!-- UI -->
 <div id="ui" style="display:none">
   dB: <span id="db">--</span>
-  Screaming: <span id="count">0</span>/<span id="total">0</span>
 </div>
 
-<!-- FIELD -->
+<div id="score">0</div>
 <div id="field"></div>
 
 <script>
-/* ---------- SETUP ---------- */
 const body = document.body;
-  
-const CAT_NUMBERS = [1,2,3,4,5,6,7,8,9];
-const DUPLICATES = 1;
 
+/* ---------- CONSTANTS ---------- */
+const CAT_NUMBERS = [1,2,3,4,5,6,7,8,9];
 const REF_RMS = 0.005;
 const BASE_DB = 8;
 const DB_PER_CAT = 3;
 
-const cats = [];
-const field = document.getElementById("field");
+/* ---------- STATE ---------- */
+let cats = [];
+let audioCtx, analyser, stream, raf;
+let maxMode = false;
+let exitTimer = null;
+let score = 0;
+let maxAwarded = false;
+let lastScreamingCount = 0;
+let screamingSet = [];
 
-function imgPath(type,n){ return encodeURIComponent(`${type} ${n}.png`); }
+/* ---------- ELEMENTS ---------- */
+const field = document.getElementById("field");
+const dbEl = document.getElementById("db");
+const scoreEl = document.getElementById("score");
+
+/* ---------- HELPERS ---------- */
+function imgPath(type,n){
+  return encodeURIComponent(`${type} ${n}.png`);
+}
+
+function shuffle(arr){
+  for (let i=arr.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [arr[i],arr[j]] = [arr[j],arr[i]];
+  }
+}
 
 /* ---------- CREATE CATS ---------- */
 for (const n of CAT_NUMBERS){
-  for (let i=0;i<DUPLICATES;i++){
-    const d = document.createElement("div");
-    d.className = "cat";
-    const img = document.createElement("img");
-    img.src = imgPath("normal",n);
-    d.appendChild(img);
-    field.appendChild(d);
-    cats.push({d,img,n});
-  }
+  const d = document.createElement("div");
+  d.className = "cat";
+  const img = document.createElement("img");
+  img.src = imgPath("normal",n);
+  d.appendChild(img);
+  field.appendChild(d);
+  cats.push({d,img,n});
 }
-document.getElementById("total").textContent = cats.length;
 
 /* ---------- SPRINKLE LAYOUT ---------- */
 function sprinkle(){
@@ -195,14 +216,7 @@ sprinkle();
 addEventListener("resize", sprinkle);
 
 /* ---------- AUDIO ---------- */
-let audioCtx, analyser, stream, raf;
-const dbEl = document.getElementById("db");
-const countEl = document.getElementById("count");
-
 function rmsToDb(r){ return 20*Math.log10(Math.max(r,1e-8)/REF_RMS); }
-
-let maxMode = false;
-let exitTimer = null;
 
 function spawnExplosion(){
   const img = document.createElement("img");
@@ -219,11 +233,21 @@ function enterMax(){
   if (maxMode) return;
   maxMode = true;
   body.style.background = `url("hell.png") center/cover fixed`;
+
+  if (!maxAwarded){
+    score++;
+    scoreEl.textContent = score;
+    scoreEl.classList.add("scoreJitter");
+    setTimeout(()=>scoreEl.classList.remove("scoreJitter"),250);
+    maxAwarded = true;
+  }
+
   for (let i=0;i<12;i++) spawnExplosion();
 }
 
 function exitMax(){
   maxMode = false;
+  maxAwarded = false;
   body.style.background = "";
 }
 
@@ -239,10 +263,15 @@ function loop(){
   if (db >= BASE_DB)
     screaming = Math.min(cats.length,1+Math.floor((db-BASE_DB)/DB_PER_CAT));
 
-  countEl.textContent = screaming;
+  if (screaming !== lastScreamingCount){
+    screamingSet = cats.map((_,i)=>i);
+    shuffle(screamingSet);
+    screamingSet = screamingSet.slice(0,screaming);
+    lastScreamingCount = screaming;
+  }
 
   cats.forEach((c,i)=>{
-    const s = i < screaming;
+    const s = screamingSet.includes(i);
     c.img.src = imgPath(s?"scream":"normal",c.n);
     c.d.classList.toggle("vibrate",s);
   });
@@ -252,7 +281,10 @@ function loop(){
     if (Math.random() < Math.min(0.25, db/60)) spawnExplosion();
     if (exitTimer){ clearTimeout(exitTimer); exitTimer=null; }
   } else if (maxMode && !exitTimer){
-    exitTimer = setTimeout(()=>{ exitMax(); exitTimer=null; },3000);
+    exitTimer = setTimeout(()=>{
+      exitMax();
+      exitTimer=null;
+    },3000);
   }
 
   raf = requestAnimationFrame(loop);
@@ -267,7 +299,7 @@ async function startMic(){
   loop();
 }
 
-/* ---------- START BUTTON ---------- */
+/* ---------- START ---------- */
 document.getElementById("gameBtn").onclick = ()=>{
   document.getElementById("titleImg").classList.add("fadeOut");
   document.getElementById("startScreen").classList.add("fadeOut");
